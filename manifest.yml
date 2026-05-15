@@ -1,13 +1,16 @@
 app:
-  id: ari:cloud:ecosystem::app/market-radar
+  id: ari:cloud:ecosystem::app/51430985-23b0-4c61-9533-95df091e10eb
   runtime:
     name: nodejs24.x
 
 permissions:
   scopes:
     - read:jira-work
-    - read:dashboard
     - storage:app
+  external:
+    fetch:
+      backend:
+        - "https://db-proxy.example.com"
 
 modules:
   jira:dashboardGadget:
@@ -16,23 +19,21 @@ modules:
       resolver:
         function: resolver
       title: Market Radar
-      description: Real-time market sentiment, Fed policy, and sector rotation powered by CockroachDB
+      description: Real-time market sentiment, Fed policy, and sector rotation powered
+        by CockroachDB
       icon: https://developer.atlassian.com/platform/forge/images/icons/analytics-icon.svg
       thumbnail: https://developer.atlassian.com/platform/forge/images/logos/atlassian-logo.svg
 
   webtrigger:
     - key: market-radar-webtrigger
-      resource: webhook
       function: webhook-handler
+
+  function:
+    - key: resolver
+      handler: index.handler
+    - key: webhook-handler
+      handler: webhook.handler
 
 resources:
   - key: main
-    path: src/frontend/index.jsx
-  - key: webhook
-    path: src/webhook.js
-
-function:
-  - key: resolver
-    handler: index.handler
-  - key: webhook-handler
-    handler: webhook.handler
+    path: src/frontend

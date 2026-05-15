@@ -1,4 +1,5 @@
-import { fetch, storage } from '@forge/api';
+import { fetch } from '@forge/api';
+import { getAll, set } from '@forge/kvs';
 
 const DB_PROXY = 'https://db-proxy.example.com'; // Replace with actual CockroachDB REST proxy URL
 const CACHE_KEY = 'market-radar-data';
@@ -63,8 +64,8 @@ async function getFromProxy() {
 
 async function getFromStorage() {
   try {
-    const cached = await storage.get(CACHE_KEY);
-    if (!cached) return null;
+    const cached = await getAll(CACHE_KEY);
+    if (!cached || !cached.timestamp) return null;
     if (Date.now() - cached.timestamp > CACHE_TTL) return null;
     return cached.data;
   } catch (e) {
@@ -80,7 +81,7 @@ export async function handler(request) {
 
   // Cache the result
   try {
-    await storage.set(CACHE_KEY, { data, timestamp: Date.now() });
+    await set(CACHE_KEY, { data, timestamp: Date.now() });
   } catch (e) {
     // Storage write failure is non-critical; still return data
   }
