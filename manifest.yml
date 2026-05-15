@@ -1,0 +1,38 @@
+app:
+  id: ari:cloud:ecosystem::app/market-radar
+  runtime:
+    name: nodejs24.x
+
+permissions:
+  scopes:
+    - read:jira-work
+    - read:dashboard
+    - storage:app
+
+modules:
+  jira:dashboardGadget:
+    - key: market-radar-gadget
+      resource: main
+      resolver:
+        function: resolver
+      title: Market Radar
+      description: Real-time market sentiment, Fed policy, and sector rotation powered by CockroachDB
+      icon: https://developer.atlassian.com/platform/forge/images/icons/analytics-icon.svg
+      thumbnail: https://developer.atlassian.com/platform/forge/images/logos/atlassian-logo.svg
+
+  webtrigger:
+    - key: market-radar-webtrigger
+      resource: webhook
+      function: webhook-handler
+
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+  - key: webhook
+    path: src/webhook.js
+
+function:
+  - key: resolver
+    handler: index.handler
+  - key: webhook-handler
+    handler: webhook.handler
