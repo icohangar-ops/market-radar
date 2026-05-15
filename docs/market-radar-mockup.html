@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Market Radar - Jira Dashboard Gadget</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 900px;
+    background: #F4F5F7;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #172B4D;
+    overflow: hidden;
+  }
+
+  /* ── Jira top nav bar ── */
+  .jira-nav {
+    height: 56px;
+    background: #0052CC;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+  }
+  .jira-nav .logo {
+    display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 700; font-size: 16px;
+  }
+  .jira-nav .logo svg { width: 24px; height: 24px; }
+  .jira-nav .nav-links { display: flex; gap: 4px; margin-left: 24px; }
+  .jira-nav .nav-links a {
+    color: rgba(255,255,255,0.85); text-decoration: none; padding: 6px 12px;
+    border-radius: 4px; font-size: 14px; font-weight: 500;
+  }
+  .jira-nav .nav-links a:hover { background: rgba(255,255,255,0.15); }
+  .jira-nav .nav-links a.active { background: rgba(255,255,255,0.2); color: #fff; }
+  .jira-nav .nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .jira-nav .nav-right .avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: #6554C0;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 12px; font-weight: 600;
+  }
+
+  /* ── Breadcrumb / dashboard bar ── */
+  .dashbar {
+    height: 40px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #DFE1E6;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    font-size: 13px;
+    color: #6B778C;
+    gap: 6px;
+  }
+  .dashbar span.bc-sep { color: #DFE1E6; }
+  .dashbar span.bc-current { color: #172B4D; font-weight: 500; }
+
+  /* ── Dashboard content area ── */
+  .dash-content {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    height: calc(900px - 56px - 40px);
+  }
+
+  /* ── Gadget card ── */
+  .gadget {
+    background: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(9,30,66,0.12), 0 1px 2px rgba(9,30,66,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .gadget-header {
+    background: #091E42;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .gadget-header .gadget-icon {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: linear-gradient(135deg, #0052CC, #2684FF);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gadget-header .gadget-icon svg { width: 18px; height: 18px; }
+  .gadget-header .gadget-title-area { flex: 1; }
+  .gadget-header .gadget-title {
+    color: #FFFFFF; font-size: 15px; font-weight: 600; letter-spacing: -0.2px;
+  }
+  .gadget-header .gadget-subtitle {
+    color: #8993A4; font-size: 11px; font-weight: 400; margin-top: 1px;
+  }
+  .gadget-header .gadget-menu {
+    width: 28px; height: 28px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .gadget-header .gadget-menu:hover { background: rgba(255,255,255,0.1); }
+  .gadget-header .gadget-menu svg { width: 16px; height: 16px; color: #8993A4; }
+
+  .gadget-body {
+    padding: 16px 20px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* ── Sentiment meter ── */
+  .sentiment-section {
+    margin-bottom: 14px;
+  }
+  .sentiment-meter {
+    background: #EBECF0;
+    border-radius: 6px;
+    height: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .sentiment-meter-fill {
+    width: 62%;
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #36B37E, #97D48D, #FFD666);
+  }
+  .sentiment-label {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; font-weight: 600; color: #172B4D;
+  }
+  .sentiment-label .signal-val {
+    font-weight: 700; color: #FF991F;
+    background: #FFF7E6;
+    padding: 1px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  /* ── Alerts ── */
+  .alert {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    align-items: flex-start;
+  }
+  .alert svg { flex-shrink: 0; margin-top: 1px; }
+  .alert-warning {
+    background: #FFF7E6;
+    border-left: 3px solid #FF991F;
+    color: #6B5900;
+  }
+  .alert-warning svg { color: #FF991F; }
+  .alert-info {
+    background: #DEEBFF;
+    border-left: 3px solid #0052CC;
+    color: #0747A6;
+  }
+  .alert-info svg { color: #0052CC; }
+  .alert-date {
+    font-size: 10px;
+    opacity: 0.7;
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    display: flex;
+    border-bottom: 2px solid #DFE1E6;
+    margin-bottom: 14px;
+    gap: 0;
+  }
+  .tab {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6B778C;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab:hover { color: #172B4D; }
+  .tab.active {
+    color: #0052CC;
+    border-bottom-color: #0052CC;
+    font-weight: 600;
+  }
+
+  /* ── Data table ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .data-table thead th {
+    background: #F4F5F7;
+    color: #6B778C;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 2px solid #DFE1E6;
+  }
+  .data-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #EBECF0;
+    vertical-align: middle;
+  }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table tbody tr:hover { background: #F8F9FA; }
+  .data-table .indicator-name {
+    font-weight: 500; color: #172B4D;
+  }
+  .data-table .indicator-value {
+    font-weight: 600; font-variant-numeric: tabular-nums;
+    color: #172B4D;
+  }
+
+  /* ── Signal badges ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-bullish { background: #E3FCEF; color: #006644; }
+  .badge-bearish { background: #FFEBE6; color: #BF2600; }
+  .badge-neutral { background: #EBECF0; color: #42526E; }
+
+  /* ── Trend indicators ── */
+  .trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #6B778C;
+  }
+  .trend svg { width: 14px; height: 14px; }
+  .trend.up svg { color: #36B37E; }
+  .trend.down svg { color: #FF5630; }
+  .trend.flat svg { color: #97A0AF; }
+
+  /* ── Sidebar placeholder gadgets ── */
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .sidebar-gadget {
+    background: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(9,30,66,0.12), 0 1px 2px rgba(9,30,66,0.08);
+    overflow: hidden;
+  }
+  .sidebar-gadget .sg-header {
+    background: #091E42;
+    padding: 10px 16px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .sidebar-gadget .sg-body {
+    padding: 14px 16px;
+    font-size: 12px;
+    color: #6B778C;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-gadget .sg-body .placeholder-bar {
+    width: 80%;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .placeholder-line {
+    height: 8px;
+    background: #EBECF0;
+    border-radius: 4px;
+  }
+  .placeholder-line.short { width: 60%; }
+  .placeholder-line.medium { width: 80%; }
+  .placeholder-line.long { width: 95%; }
+
+  .mini-chart-placeholder {
+    width: 100%; height: 100px;
+    background: linear-gradient(180deg, #F4F5F7 0%, #FFFFFF 100%);
+    border-radius: 4px;
+    display: flex; align-items: flex-end; justify-content: center; gap: 6px;
+    padding: 12px;
+  }
+  .mini-bar {
+    width: 18px;
+    border-radius: 3px 3px 0 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Jira Navigation -->
+<nav class="jira-nav">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 19.5h20L12 2z"/>
+    </svg>
+    Jira
+  </div>
+  <div class="nav-links">
+    <a href="#">Your work</a>
+    <a href="#">Projects</a>
+    <a href="#">Filters</a>
+    <a href="#">Dashboards</a>
+    <a href="#">People</a>
+    <a href="#" class="active">Apps</a>
+  </div>
+  <div class="nav-right">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    <div class="avatar">JD</div>
+  </div>
+</nav>
+
+<!-- Breadcrumb -->
+<div class="dashbar">
+  <span>Dashboards</span>
+  <span class="bc-sep">›</span>
+  <span class="bc-current">Market Intelligence Dashboard</span>
+</div>
+
+<!-- Dashboard grid -->
+<div class="dash-content">
+
+  <!-- Main gadget: Market Radar -->
+  <div class="gadget">
+    <div class="gadget-header">
+      <div class="gadget-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div class="gadget-title-area">
+        <div class="gadget-title">Market Radar</div>
+        <div class="gadget-subtitle">Updated: May 15, 2026</div>
+      </div>
+      <div class="gadget-menu">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+      </div>
+    </div>
+
+    <div class="gadget-body">
+
+      <!-- Sentiment meter -->
+      <div class="sentiment-section">
+        <div class="sentiment-meter">
+          <div class="sentiment-meter-fill"></div>
+        </div>
+        <div class="sentiment-label">
+          <span>CAUTIOUSLY OPTIMISTIC</span>
+          <span class="signal-val">0.62</span>
+        </div>
+      </div>
+
+      <!-- Alert boxes -->
+      <div class="alert alert-warning">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        <div>
+          <strong>Yield curve inversion deepening</strong> — 10Y-2Y at -18bps
+          <span class="alert-date">2026-05-10</span>
+        </div>
+      </div>
+      <div class="alert alert-info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <div>
+          <strong>Fed funds futures imply 78% probability</strong> of July cut
+          <span class="alert-date">2026-05-14</span>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab active">Sentiment Indicators</div>
+        <div class="tab">Fed Policy</div>
+        <div class="tab">Sector Rotation</div>
+      </div>
+
+      <!-- Data table -->
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Indicator</th>
+            <th>Value</th>
+            <th>Signal</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="indicator-name">VIX</td>
+            <td class="indicator-value">16.4</td>
+            <td><span class="badge badge-neutral">Neutral</span></td>
+            <td>
+              <span class="trend flat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                flat
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td class="indicator-name">Credit Spreads (IG)</td>
+            <td class="indicator-value">98</td>
+            <td><span class="badge badge-bullish">Bullish</span></td>
+            <td>
+              <span class="trend down">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                tightening
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td class="indicator-name">10Y-2Y Spread</td>
+            <td class="indicator-value">-18</td>
+            <td><span class="badge badge-bearish">Bearish</span></td>
+            <td>
+              <span class="trend flat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                flat
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td class="indicator-name">DXY</td>
+            <td class="indicator-value">104.2</td>
+            <td><span class="badge badge-neutral">Neutral</span></td>
+            <td>
+              <span class="trend down">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                weakening
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td class="indicator-name">Put/Call Ratio</td>
+            <td class="indicator-value">0.85</td>
+            <td><span class="badge badge-bullish">Bullish</span></td>
+            <td>
+              <span class="trend down">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                declining
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-gadget">
+      <div class="sg-header">Activity Stream</div>
+      <div class="sg-body">
+        <div class="placeholder-bar">
+          <div class="placeholder-line short"></div>
+          <div class="placeholder-line medium"></div>
+          <div class="placeholder-line long"></div>
+          <div class="placeholder-line short"></div>
+          <div class="placeholder-line medium"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-gadget">
+      <div class="sg-header">Assigned to Me</div>
+      <div class="sg-body">
+        <div class="placeholder-bar">
+          <div class="placeholder-line long"></div>
+          <div class="placeholder-line medium"></div>
+          <div class="placeholder-line short"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-gadget">
+      <div class="sg-header">Sprint Health</div>
+      <div class="sg-body" style="padding: 10px 12px;">
+        <div class="mini-chart-placeholder">
+          <div class="mini-bar" style="height:40%; background:#36B37E;"></div>
+          <div class="mini-bar" style="height:65%; background:#36B37E;"></div>
+          <div class="mini-bar" style="height:50%; background:#FF991F;"></div>
+          <div class="mini-bar" style="height:80%; background:#36B37E;"></div>
+          <div class="mini-bar" style="height:55%; background:#36B37E;"></div>
+          <div class="mini-bar" style="height:70%; background:#0052CC;"></div>
+          <div class="mini-bar" style="height:45%; background:#36B37E;"></div>
+          <div class="mini-bar" style="height:60%; background:#FF991F;"></div>
+          <div class="mini-bar" style="height:75%; background:#36B37E;"></div>
+          <div class="mini-bar" style="height:30%; background:#DFE1E6;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
