@@ -220,3 +220,7 @@ market-radar/
 ## License
 
 Private repository. All rights reserved.
+
+## Demo
+
+📺 [Watch the demo](demos/$(basename "$video")) — slide-style walkthrough of key features and usage.
