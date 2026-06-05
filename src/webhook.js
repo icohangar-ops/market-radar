@@ -1,5 +1,8 @@
 import { set } from '@forge/kvs';
+import crypto from '@forge/crypto';
 
+// HMAC webhook verification. Set WEBHOOK_SECRET in Forge app storage.
+// POST requests must include an X-Webhook-Signature header: hex(sha256(secret + body))
 export async function handler(request) {
   if (request.method !== 'POST') {
     return { status: 405, body: { error: 'Method not allowed' } };
@@ -7,6 +10,20 @@ export async function handler(request) {
 
   try {
     const body = await request.json();
+    const rawBody = JSON.stringify(body);
+
+    // HMAC signature verification
+    const signature = request.headers.get('x-webhook-signature');
+    const secret = process.env.WEBHOOK_SECRET || '';
+
+    if (secret && signature) {
+      const expected = await crypto.sha256().update(secret + rawBody).digest().then(h => h.toHex());
+      if (signature !== expected) {
+        return { status: 401, body: { error: 'Invalid webhook signature' } };
+      }
+    } else if (secret) {
+      return { status: 401, body: { error: 'Missing X-Webhook-Signature header' } };
+    }
 
     // Validate required fields
     if (!body.sentiment || !body.fedPolicy || !body.sectorRotation) {
