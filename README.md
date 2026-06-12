@@ -90,7 +90,7 @@ The interface presents three tabbed views: **Sentiment Indicators** showing seve
 
 ```bash
 # Clone the repository
-git clone https://github.com/Cubiczan/market-radar.git
+git clone https://github.com/icohangar-ops/market-radar.git
 cd market-radar
 
 # Install dependencies
