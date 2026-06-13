@@ -1,7 +1,12 @@
 import { fetch } from '@forge/api';
 import { getAll, set } from '@forge/kvs';
+import { safeFetch } from './lib/resilience/safeFetch.js';
+import { isResilienceError } from './lib/resilience/errors.js';
 
 const DB_PROXY = 'https://db-proxy.example.com'; // Replace with actual CockroachDB REST proxy URL
+const PROXY_TIMEOUT_MS = 8_000;
+// Distinguishes "proxy unconfigured" (placeholder URL) from "proxy down".
+const PROXY_CONFIGURED = DB_PROXY !== 'https://db-proxy.example.com';
 const CACHE_KEY = 'market-radar-data';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -50,14 +55,34 @@ const MOCK = {
 };
 
 async function getFromProxy() {
+  // Skip the network call entirely when the proxy is still the placeholder URL,
+  // so operators see "unconfigured" rather than a misleading "proxy down".
+  if (!PROXY_CONFIGURED) {
+    console.warn('[market-radar] DB proxy is unconfigured (placeholder URL); falling back to cache/mock.');
+    return null;
+  }
   try {
-    const response = await fetch(`${DB_PROXY}/api/market-radar`);
-    if (!response.ok) return null;
+    // safeFetch adds an ~8s per-attempt AbortController timeout plus retry with
+    // backoff, so a hanging upstream cannot stall the Forge resolver. Forge's
+    // own fetch is passed via fetchImpl so requests stay instrumented.
+    const response = await safeFetch(`${DB_PROXY}/api/market-radar`, {
+      fetchImpl: fetch,
+      timeoutMs: PROXY_TIMEOUT_MS,
+    });
+    if (!response.ok) {
+      console.warn(`[market-radar] DB proxy returned ${response.status}; falling back to cache/mock.`);
+      return null;
+    }
     const json = await response.json();
     // Validate the response has the expected shape
-    if (!json.sentiment || !json.fedPolicy || !json.sectorRotation) return null;
+    if (!json.sentiment || !json.fedPolicy || !json.sectorRotation) {
+      console.warn('[market-radar] DB proxy response failed shape validation; falling back to cache/mock.');
+      return null;
+    }
     return json;
   } catch (e) {
+    const reason = isResilienceError(e) ? e.kind : 'error';
+    console.warn(`[market-radar] DB proxy fetch failed (${reason}); falling back to cache/mock.`);
     return null;
   }
 }
