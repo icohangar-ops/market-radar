@@ -8,6 +8,16 @@ Jira dashboard gadget for real-time market sentiment, Federal Reserve policy tra
 
 ---
 
+<!-- product-screenshots:start -->
+## Product screenshots
+
+Market Radar gadget showing catalysts, sentiment scores, activity, and sector signals.
+
+![market-radar product interface](docs/market-radar-screenshot.png)
+
+Existing UI capture stored in this repository; displayed values may be demo or sample data.
+<!-- product-screenshots:end -->
+
 ## Overview
 
 Market Radar transforms a Jira dashboard into a live financial intelligence terminal. It surfaces market sentiment indicators, Federal Reserve policy signals, and institutional sector rotation flows in a single, glanceable gadget -- so engineering and product teams can stay aligned with macro conditions without leaving Jira.
